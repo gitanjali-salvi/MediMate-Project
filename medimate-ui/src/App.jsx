@@ -32,28 +32,22 @@ function App() {
         {/* --- Public Routes --- */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        
-        {/* --- Module Selection (for demo purposes) --- */}
+        <Route path="/signup/:role" element={<SignupPage />} />
         <Route path="/select-module" element={<ModuleSelector />} />
 
-        {/* --- Patient Routes --- */}
+        {/* --- Protected Routes for Each Module --- */}
         <Route path="/patient/dashboard" element={<PatientDashboard />} />
         <Route path="/patient/upload-documents" element={<UploadDocuments />} />
         <Route path="/patient/consent" element={<ConsentManagement />} />
         <Route path="/patient/track-claims" element={<ClaimTracking />} />
         
-        {/* --- Hospital Routes --- */}
         <Route path="/hospital/dashboard" element={<HospitalDashboard />} />
         <Route path="/hospital/upload" element={<HospitalUpload />} />
 
-        {/* --- Insurer Routes --- */}
         <Route path="/insurer/dashboard" element={<InsurerDashboard />} />
         <Route path="/insurer/claim-review/:claimId" element={<ClaimReview />} />
         
-        {/* --- Admin Route --- */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
-
       </Routes>
     </BrowserRouter>
   );

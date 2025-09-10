@@ -10,7 +10,6 @@ function LoginPage() {
     const navigate = useNavigate();
 
     const validateForm = () => {
-        // ... validation logic remains the same ...
         const newErrors = {};
         if (!email) {
             newErrors.email = 'Email is required';
@@ -32,22 +31,20 @@ function LoginPage() {
                 
                 const response = await axios.post('http://localhost:5000/api/login', userData);
 
-                // Server now responds with token AND role
                 const { token, role } = response.data;
-
-                // Store the token in localStorage
                 localStorage.setItem('token', token);
 
-                // --- Role-Based Redirect ---
+                // --- CORRECTED ROLE-BASED REDIRECT ---
                 if (role === 'patient') {
-                    navigate('/patient-dashboard');
+                    navigate('/patient/dashboard');
                 } else if (role === 'hospital') {
-                    navigate('/hospital-dashboard');
+                    navigate('/hospital/dashboard');
                 } else if (role === 'insurer') {
-                    navigate('/insurer-dashboard');
+                    navigate('/insurer/dashboard');
+                } else if (role === 'admin') {
+                    navigate('/admin/dashboard');
                 } else {
-                    // Fallback or error handling
-                    navigate('/');
+                    navigate('/'); // Fallback
                 }
 
             } catch (error) {
@@ -61,7 +58,6 @@ function LoginPage() {
         }
     };
 
-    // ... The rest of the JSX form remains the same ...
     return (
         <div className="auth-container">
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
@@ -96,7 +92,7 @@ function LoginPage() {
 
                 <button type="submit" className="btn-auth">Login</button>
                 <p className="auth-switch">
-                    Don't have an account? <Link to="/signup">Sign Up</Link>
+                    Don't have an account? <Link to="/signup/patient">Sign Up</Link>
                 </p>
             </form>
         </div>

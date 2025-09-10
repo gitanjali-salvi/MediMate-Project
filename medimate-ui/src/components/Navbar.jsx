@@ -25,7 +25,7 @@ function Navbar() {
                 <Link to="/login">
                     <button className="btn-login">Login</button>
                 </Link>
-                {/* --- THIS IS THE CHANGE --- */}
+                {/* CHANGE: This now links to the module selection page */}
                 <Link to="/select-module">
                     <button className="btn-signup">Sign Up</button>
                 </Link>
