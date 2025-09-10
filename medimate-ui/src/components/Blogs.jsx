@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useOnScreen from '../hooks/useOnScreen';
 
-// (The staticBlogPosts and BlogCardSkeleton components remain the same)
+// (The staticBlogPosts and BlogCardSkeleton components are unchanged)
 const staticBlogPosts = [
     {
         image: "https://placehold.co/600x400/6c757d/ffffff?text=Blockchain+in+Healthcare",
@@ -45,52 +45,49 @@ function Blogs() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchBlogPosts = async () => {
+        const fetchAndCacheBlogPosts = async () => {
             setIsLoading(true);
+            const cacheKey = 'blogPostsCache';
+            const cacheTimestampKey = 'blogPostsCacheTimestamp';
+            const cacheDuration = 60 * 60 * 1000; // 1 hour in milliseconds
+
+            const cachedTimestamp = localStorage.getItem(cacheTimestampKey);
+            const cachedPosts = localStorage.getItem(cacheKey);
+
+            if (cachedPosts && cachedTimestamp && (Date.now() - cachedTimestamp < cacheDuration)) {
+                // If we have fresh data in the cache, use it
+                setPosts(JSON.parse(cachedPosts));
+                setIsLoading(false);
+                console.log("Loaded blog posts from cache.");
+                return;
+            }
+
+            console.log("Cache is old or empty. Fetching new blog posts...");
             
-            const userQuery = `
-                Find 3 recent, trending articles about the following topics:
-                1. Innovations in blockchain for securing healthcare data.
-                2. AI and automation in medical insurance claim processing.
-                3. The importance of patient data ownership and new technologies.
+            const prompt = `
+                Find 3 recent, trending articles on:
+                1. Blockchain in healthcare security.
+                2. AI in medical insurance automation.
+                3. Patient data ownership.
 
-                For each article, provide a title, a concise one-sentence excerpt, the source URL, and a relevant category.
+                IMPORTANT: Respond ONLY with a valid JSON array of objects in a \`\`\`json markdown block.
+                Each object must have these exact properties: "category", "title", "excerpt", "sourceUrl".
             `;
-
-            const responseSchema = {
-                type: "ARRAY",
-                items: {
-                    type: "OBJECT",
-                    properties: {
-                        "category": { "type": "STRING" },
-                        "title": { "type": "STRING" },
-                        "excerpt": { "type": "STRING" },
-                        "sourceUrl": { "type": "STRING" }
-                    },
-                    required: ["category", "title", "excerpt", "sourceUrl"]
-                }
-            };
             
             const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
             
             if (!apiKey) {
-                console.error("Gemini API key not found. Please add it to your .env file.");
+                console.error("API key not found.");
                 setPosts(staticBlogPosts);
                 setIsLoading(false);
                 return;
             }
 
-            // --- THIS IS THE CORRECTED API URL ---
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
-            // Simplified payload
             const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
+                contents: [{ parts: [{ text: prompt }] }],
                 tools: [{ "google_search": {} }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: responseSchema
-                }
             };
 
             try {
@@ -103,20 +100,31 @@ function Blogs() {
                 if (!response.ok) {
                     const errorBody = await response.text();
                     console.error("API Response Error Body:", errorBody);
-                    throw new Error(`API error: ${response.status} ${response.statusText}`);
+                    throw new Error(`API error: ${response.status}`);
                 }
 
                 const result = await response.json();
                 
                 if (result.candidates && result.candidates[0].content.parts[0].text) {
-                    const parsedPosts = JSON.parse(result.candidates[0].content.parts[0].text);
-                    const postsWithImages = parsedPosts.map((post, index) => ({
-                        ...post,
-                        image: staticBlogPosts[index % staticBlogPosts.length].image
-                    }));
-                    setPosts(postsWithImages);
+                    let textResponse = result.candidates[0].content.parts[0].text;
+                    const jsonMatch = textResponse.match(/```json\s*([\s\S]*?)\s*```/);
+                    
+                    if (jsonMatch && jsonMatch[1]) {
+                        const jsonString = jsonMatch[1];
+                        const parsedPosts = JSON.parse(jsonString);
+                        const postsWithImages = parsedPosts.map((post, index) => ({
+                            ...post,
+                            image: staticBlogPosts[index % staticBlogPosts.length].image
+                        }));
+                        setPosts(postsWithImages);
+                        // Save the new data and timestamp to the cache
+                        localStorage.setItem(cacheKey, JSON.stringify(postsWithImages));
+                        localStorage.setItem(cacheTimestampKey, Date.now());
+                    } else {
+                        throw new Error("Could not parse JSON from the API response.");
+                    }
                 } else {
-                    throw new Error("No content found in API response.");
+                     throw new Error("No content found in API response.");
                 }
             } catch (err) {
                 console.error("Failed to fetch blog posts, falling back to static data:", err);
@@ -126,7 +134,7 @@ function Blogs() {
             }
         };
 
-        fetchBlogPosts();
+        fetchAndCacheBlogPosts();
     }, []);
 
     return (
