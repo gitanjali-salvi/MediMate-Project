@@ -1,19 +1,30 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom'; // Import useParams
 import axios from 'axios';
 import '../AuthForm.css';
 
 function SignupPage() {
+    // Get the role from the URL parameter
+    const { role: urlRole } = useParams();
+
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [role, setRole] = useState(''); // New state for the role
+    // Set the initial role from the URL
+    const [role, setRole] = useState(urlRole || ''); 
     const [errors, setErrors] = useState({});
     const [successMessage, setSuccessMessage] = useState('');
 
+    // When the component loads, update the state if the URL role changes
+    useEffect(() => {
+        setRole(urlRole);
+    }, [urlRole]);
+
+
     const validateForm = () => {
+        // ... validation logic remains the same ...
         const newErrors = {};
         if (!fullName) newErrors.fullName = 'Full name is required';
         if (!email) {
@@ -34,36 +45,31 @@ function SignupPage() {
         if (password !== confirmPassword) {
             newErrors.confirmPassword = 'Passwords do not match';
         }
-        // --- New Validation for Role ---
         if (!role) {
-            newErrors.role = 'Please select a role';
+            newErrors.role = 'A role must be selected';
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async (event) => {
+        // ... handleSubmit logic remains the same ...
         event.preventDefault();
         setSuccessMessage('');
         if (validateForm()) {
             try {
-                // Include role in the user data payload
                 const userData = { fullName, email, phoneNumber, password, role };
-
                 const response = await axios.post('http://localhost:5000/api/register', userData);
-
                 console.log('Server response:', response.data);
                 setSuccessMessage('Account created successfully! Please log in.');
-
                 // Clear form fields
                 setFullName('');
                 setEmail('');
                 setPhoneNumber('');
                 setPassword('');
                 setConfirmPassword('');
-                setRole('');
+                // Don't clear role, as it's from the URL
                 setErrors({});
-
             } catch (error) {
                 console.error('Signup error:', error);
                 if (error.response && error.response.data) {
@@ -82,14 +88,15 @@ function SignupPage() {
                 {errors.form && <p className="error-text">{errors.form}</p>}
                 {successMessage && <p className="success-text" style={{color: 'green'}}>{successMessage}</p>}
 
-                {/* --- New Role Selection Field --- */}
+                {/* The dropdown is now disabled so the user cannot change their selection */}
                 <div className="input-group">
                     <label htmlFor="role">Register As</label>
-                    <select id="role" value={role} onChange={(e) => setRole(e.target.value)} required>
+                    <select id="role" value={role} onChange={(e) => setRole(e.target.value)} required disabled>
                         <option value="">-- Select a Role --</option>
                         <option value="patient">Patient</option>
                         <option value="hospital">Hospital / Provider</option>
                         <option value="insurer">Insurer / TPA</option>
+                        <option value="admin">Admin</option>
                     </select>
                     {errors.role && <p className="error-text">{errors.role}</p>}
                 </div>

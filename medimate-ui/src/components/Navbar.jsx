@@ -15,7 +15,6 @@ function Navbar() {
             <div className="nav-logo">
                 <Link to="/">MediMate 🩺</Link>
             </div>
-            {/* New Nav Links for sections */}
             <div className="nav-links">
                 <a onClick={() => scrollToSection('features')}>Features</a>
                 <a onClick={() => scrollToSection('about-us')}>About Us</a>
@@ -26,7 +25,8 @@ function Navbar() {
                 <Link to="/login">
                     <button className="btn-login">Login</button>
                 </Link>
-                <Link to="/signup">
+                {/* --- THIS IS THE CHANGE --- */}
+                <Link to="/select-module">
                     <button className="btn-signup">Sign Up</button>
                 </Link>
             </div>
