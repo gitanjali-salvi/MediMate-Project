@@ -18,11 +18,12 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    // --- NEW FIELD ---
+    // --- UPDATED FIELD ---
     role: {
         type: String,
         required: true,
-        enum: ['patient', 'hospital', 'insurer'], // The user's role must be one of these values
+        // Add 'admin' to the list of allowed roles
+        enum: ['patient', 'hospital', 'insurer', 'admin'], 
     },
     date: {
         type: Date,
