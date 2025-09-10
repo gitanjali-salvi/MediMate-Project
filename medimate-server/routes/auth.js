@@ -4,36 +4,25 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// @route   POST /api/register
+// ... (your /register route remains the same)
 router.post('/register', async (req, res) => {
-    // Add role to the destructured properties
     const { fullName, email, phoneNumber, password, role } = req.body;
-
     try {
         let user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({ message: 'User with this email already exists.' });
         }
-
-        user = new User({
-            fullName,
-            email,
-            phoneNumber,
-            password,
-            role, // Save the role
-        });
-
+        user = new User({ fullName, email, phoneNumber, password, role });
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
-
         await user.save();
         res.status(201).json({ message: 'User registered successfully!' });
-
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
+
 
 // @route   POST /api/login
 router.post('/login', async (req, res) => {
@@ -50,11 +39,12 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        // --- UPDATED PAYLOAD ---
+        // --- UPDATED PAYLOAD TO INCLUDE NAME ---
         const payload = {
             user: {
                 id: user.id,
-                role: user.role, // Include the user's role
+                role: user.role,
+                name: user.fullName // Add the user's name to the token
             },
         };
 
@@ -64,8 +54,9 @@ router.post('/login', async (req, res) => {
             { expiresIn: '5h' },
             (err, token) => {
                 if (err) throw err;
-                // Send back both the token and the user's role
-                res.json({ token, role: user.role });
+                // --- UPDATED RESPONSE TO INCLUDE NAME ---
+                // Send back the token, role, AND the user's full name
+                res.json({ token, role: user.role, fullName: user.fullName });
             }
         );
     } catch (err) {

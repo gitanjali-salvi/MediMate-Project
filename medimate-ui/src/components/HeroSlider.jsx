@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
+// Import the Link component to make the button a navigator
+import { Link } from 'react-router-dom';
+
+// Import your local image file
+import securityImage from '../assets/blockchain-security.png'; 
 
 const slides = [
     {
         headline: "Your Health Records, Secured.",
         subheadline: "MediMate uses Blockchain and AI to give you control over your medical data.",
-        image: "https://placehold.co/1200x800/eaf2ff/007bff?text=Secure+Health+Vault"
+        image: securityImage
     },
     {
         headline: "Insurance Claims, Automated.",
         subheadline: "Our AI engine auto-fills complex insurance forms in seconds, eliminating errors.",
-        image: "https://placehold.co/1200x800/d4edda/28a745?text=AI+Automation"
+        image: "https://images.pexels.com/photos/3786126/pexels-photo-3786126.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
     },
     {
         headline: "Complete Patient Control.",
         subheadline: "You own your data. Grant or revoke access to doctors and insurers with a single click.",
-        image: "https://placehold.co/1200x800/fff3cd/ffc107?text=Patient+Consent"
+        image: "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
     }
 ];
 
@@ -34,14 +39,20 @@ function HeroSlider() {
                 <div 
                     key={index}
                     className={`slide ${index === currentSlide ? 'active' : ''}`}
-                    style={{ backgroundImage: `url(${slide.image})` }}
                 >
+                    <div 
+                        className="slide-background"
+                        style={{ backgroundImage: `url(${slide.image})` }}
+                    ></div>
                     <div className="slide-content">
                         <h1 className="hero-headline">{slide.headline}</h1>
                         <p className="hero-subheadline">{slide.subheadline}</p>
                         <div className="hero-cta">
-                             <button className="btn-primary-solid">Get Started for Free</button>
-                             <button className="btn-secondary-outline">Watch Demo</button>
+                             {/* --- THIS IS THE CHANGE --- */}
+                             {/* The button is now wrapped in a Link and the demo button is removed */}
+                             <Link to="/select-module">
+                                <button className="btn-primary-solid">Get Started for Free</button>
+                             </Link>
                         </div>
                     </div>
                 </div>

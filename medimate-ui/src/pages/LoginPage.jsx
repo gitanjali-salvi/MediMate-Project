@@ -9,6 +9,7 @@ function LoginPage() {
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
 
+    // ... (validateForm function remains the same)
     const validateForm = () => {
         const newErrors = {};
         if (!email) {
@@ -23,6 +24,7 @@ function LoginPage() {
         return Object.keys(newErrors).length === 0;
     };
 
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (validateForm()) {
@@ -31,10 +33,14 @@ function LoginPage() {
                 
                 const response = await axios.post('http://localhost:5000/api/login', userData);
 
-                const { token, role } = response.data;
-                localStorage.setItem('token', token);
+                // --- UPDATED TO RECEIVE AND STORE NAME ---
+                const { token, role, fullName } = response.data;
 
-                // --- CORRECTED ROLE-BASED REDIRECT ---
+                // Store both the token and the user's name
+                localStorage.setItem('token', token);
+                localStorage.setItem('userName', fullName);
+
+                // Role-Based Redirect
                 if (role === 'patient') {
                     navigate('/patient/dashboard');
                 } else if (role === 'hospital') {
@@ -44,7 +50,7 @@ function LoginPage() {
                 } else if (role === 'admin') {
                     navigate('/admin/dashboard');
                 } else {
-                    navigate('/'); // Fallback
+                    navigate('/'); 
                 }
 
             } catch (error) {
@@ -59,6 +65,7 @@ function LoginPage() {
     };
 
     return (
+        // ... (The JSX for your login form remains the same)
         <div className="auth-container">
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
                 <h2>Welcome Back!</h2>
@@ -92,7 +99,7 @@ function LoginPage() {
 
                 <button type="submit" className="btn-auth">Login</button>
                 <p className="auth-switch">
-                    Don't have an account? <Link to="/signup/patient">Sign Up</Link>
+                    Don't have an account? <Link to="/select-module">Sign Up</Link>
                 </p>
             </form>
         </div>

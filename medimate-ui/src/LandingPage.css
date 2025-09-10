@@ -523,3 +523,117 @@ body {
     line-height: 1.6;
     margin: 0;
 }
+
+.about-content .section-intro {
+    margin-bottom: 1.5rem; /* Reduces the large gap after the first paragraph */
+}
+
+/* --- New styles for Dynamic Blog Section --- */
+/* (Add this to the end of LandingPage.css) */
+
+.error-message {
+    grid-column: 1 / -1; /* Make it span the full grid width */
+    text-align: center;
+    color: var(--light-text);
+    font-style: italic;
+}
+
+.blog-card.is-loading {
+    opacity: 1;
+    transform: none;
+}
+
+.blog-card-image-skeleton {
+    width: 100%;
+    height: 200px;
+    background-color: #e0e0e0;
+}
+
+.skeleton {
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-text {
+    height: 1em;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-category {
+    width: 30%;
+    height: 0.8em;
+}
+
+.skeleton-title {
+    width: 80%;
+    height: 1.25em;
+    margin-bottom: 0.75rem;
+}
+
+.skeleton-small {
+    width: 60%;
+}
+
+@keyframes pulse {
+    0% { background-color: #e0e0e0; }
+    50% { background-color: #f0f0f0; }
+    100% { background-color: #e0e0e0; }
+}
+
+/* --- NEW STYLES FOR CINEMATIC HERO SLIDER --- */
+/* (Add this to the end of LandingPage.css) */
+
+@keyframes kenburns {
+    0% {
+        transform: scale(1.0) translate(0, 0);
+    }
+    100% {
+        transform: scale(1.1) translate(-2%, 2%);
+    }
+}
+
+.slide {
+    /* Ensure child elements are positioned correctly */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slide-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    /* Apply the animation only to the active slide's background */
+    animation: kenburns 20s ease-out infinite alternate both;
+}
+
+.slide.active .slide-background {
+    animation-play-state: running;
+}
+
+.slide:not(.active) .slide-background {
+    animation-play-state: paused;
+}
+
+/* Update the overlay for better readability */
+.slide::after {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.2));
+}
+
+/* Animate the text content as well */
+.slide.active .slide-content {
+    animation: fadeIn 1.5s ease-out;
+}
+
+.hero-cta {
+    justify-content: center; /* This will center the single button */
+}
+
+.hero-cta a {
+    text-decoration: none; /* Removes the underline from the link */
+}

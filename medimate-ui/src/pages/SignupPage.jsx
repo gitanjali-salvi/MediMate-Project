@@ -1,29 +1,27 @@
 import React, { useState, useEffect } from 'react';
-// CHANGE: Import useParams to read the URL
-import { Link, useParams } from 'react-router-dom';
+// Import useNavigate along with the other hooks
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../AuthForm.css';
 
 function SignupPage() {
-    // CHANGE: Get the role from the URL parameter
     const { role: urlRole } = useParams();
+    // Initialize the navigate function
+    const navigate = useNavigate();
 
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    // CHANGE: Set the initial role from the URL
     const [role, setRole] = useState(urlRole || ''); 
     const [errors, setErrors] = useState({});
     const [successMessage, setSuccessMessage] = useState('');
 
-    // CHANGE: Add useEffect to update the role if the URL changes
     useEffect(() => {
         setRole(urlRole);
     }, [urlRole]);
 
-    // ... (Your validateForm and handleSubmit functions are correct and do not need to change)
     const validateForm = () => {
         const newErrors = {};
         if (!fullName) newErrors.fullName = 'Full name is required';
@@ -59,14 +57,25 @@ function SignupPage() {
             try {
                 const userData = { fullName, email, phoneNumber, password, role };
                 const response = await axios.post('http://localhost:5000/api/register', userData);
+                
                 console.log('Server response:', response.data);
                 setSuccessMessage('Account created successfully! Please log in.');
+
+                // Clear form fields
                 setFullName('');
                 setEmail('');
                 setPhoneNumber('');
                 setPassword('');
                 setConfirmPassword('');
                 setErrors({});
+
+                // --- THIS IS THE NEW PART ---
+                // After a short delay to allow the user to see the success message,
+                // we automatically redirect them to the login page.
+                setTimeout(() => {
+                    navigate('/login');
+                }, 2000); // 2-second delay
+
             } catch (error) {
                 console.error('Signup error:', error);
                 if (error.response && error.response.data) {
@@ -78,7 +87,6 @@ function SignupPage() {
         }
     };
 
-
     return (
         <div className="auth-container">
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
@@ -86,7 +94,6 @@ function SignupPage() {
                 {errors.form && <p className="error-text">{errors.form}</p>}
                 {successMessage && <p className="success-text" style={{color: 'green'}}>{successMessage}</p>}
 
-                {/* CHANGE: The dropdown is now disabled so the user cannot change it */}
                 <div className="input-group">
                     <label htmlFor="role">Register As</label>
                     <select id="role" value={role} onChange={(e) => setRole(e.target.value)} required disabled>

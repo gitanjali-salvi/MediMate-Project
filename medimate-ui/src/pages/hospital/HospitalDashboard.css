@@ -269,3 +269,21 @@
     min-width: 800px;
   }
 }
+
+/* Add this to your HospitalDashboard.css file */
+
+.logout-btn {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid white;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-left: 1rem; /* Add some space */
+}
+
+.logout-btn:hover {
+    background-color: white;
+    color: #16a085; /* Match the theme color */
+}
