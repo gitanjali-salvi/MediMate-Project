@@ -20,14 +20,16 @@ mongoose.connect(mongoURI)
     .catch(err => console.error('MongoDB connection error:', err));
 
 // --- API Routes ---
-const authRoutes = require('./routes/auth'); // Import the auth routes
-const consentRoutes = require('./routes/consents'); // Import the consent routes
-app.use('/api', authRoutes); // Use the routes with a prefix of /api
-app.use('/api/consents', consentRoutes); // Use the consent routes
+const userRoutes = require('./routes/users'); // 1. Import the new user routes
+
+app.use('/api', authRoutes);
+app.use('/api/consents', consentRoutes);
+app.use('/api/users', userRoutes); // 2. Add the new user routes to your app
 
 app.get('/', (req, res) => {
     res.send('MediMate API is running...');
 });
+
 
 // --- Start the Server ---
 app.listen(PORT, () => {

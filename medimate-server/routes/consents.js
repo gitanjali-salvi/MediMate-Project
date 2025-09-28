@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const Consent = require('../models/Consent');
-const User = require('../models/User'); // Added to support .populate()
+const User = require('../models/User'); // Ensure this line is present
 
 // @route   GET /api/consents/:patientId
 // @desc    Get all consents for a patient
 router.get('/:patientId', async (req, res) => {
     try {
-        const consents = await Consent.find({ patientId: req.params.patientId });
+        const consents = await Consent.find({ patientId: req.params.patientId }).populate('insurerId', 'fullName');
         res.json(consents);
     } catch (err) {
         console.error(err.message);
@@ -51,7 +51,7 @@ router.put('/:consentId', async (req, res) => {
     }
 });
 
-// --- NEW ROUTES ADDED BELOW ---
+// --- NEW ROUTES TO ENABLE COMMUNICATION ---
 
 // @route   GET /api/consents/insurer/:insurerId
 // @desc    Get all consents granted TO a specific insurer
