@@ -1,0 +1,8 @@
+{
+  "short_name": "MediMate",
+  "name": "MediMate: AI-Powered Insurance Claim Automation",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#007bff",
+  "background_color": "#ffffff"
+}

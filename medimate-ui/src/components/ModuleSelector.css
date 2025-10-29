@@ -1,0 +1,99 @@
+.module-selector {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.selector-content {
+  max-width: 900px; /* Adjusted max-width for a 2x2 grid */
+  width: 100%;
+  text-align: center;
+}
+
+.selector-content h2 {
+  color: white;
+  font-size: clamp(2rem, 5vw, 2.5rem); /* Responsive font size */
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.selector-content p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.2rem;
+  margin-bottom: 3rem;
+}
+
+/* --- THIS IS THE KEY CHANGE for the 2x2 GRID --- */
+.module-cards {
+  display: grid;
+  grid-template-columns: 1fr; /* Default to 1 column for mobile */
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+/* On screens wider than 768px, switch to a 2-column grid */
+@media (min-width: 768px) {
+    .module-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.module-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.module-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.module-card.patient:hover { border-color: #667eea; }
+.module-card.insurer:hover { border-color: #2c5aa0; }
+.module-card.hospital:hover { border-color: #16a085; }
+.module-card.admin:hover { border-color: #8e44ad; }
+
+.module-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+/* Style the SVG icons */
+.module-icon svg {
+    width: 64px;
+    height: 64px;
+    transition: all 0.3s ease;
+}
+
+.module-card.patient .module-icon { color: #667eea; }
+.module-card.insurer .module-icon { color: #2c5aa0; }
+.module-card.hospital .module-icon { color: #16a085; }
+.module-card.admin .module-icon { color: #8e44ad; }
+
+
+.module-card h3 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.module-card p {
+  color: #666;
+  font-size: 1rem; /* Slightly smaller for better fit */
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
