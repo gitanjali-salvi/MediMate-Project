@@ -4,6 +4,8 @@ const cors = require('cors');
 const dotenv = require('dotenv'); // Import dotenv
 const authRoutes = require('./routes/auth');
 const consentRoutes = require('./routes/consents'); // Make sure this is also present
+const documentRoutes = require('./routes/documents');
+const claimRoutes = require('./routes/claims');
 
 // Load environment variables
 dotenv.config({ path: './config.env' });
@@ -27,6 +29,8 @@ const userRoutes = require('./routes/users'); // 1. Import the new user routes
 app.use('/api', authRoutes);
 app.use('/api/consents', consentRoutes);
 app.use('/api/users', userRoutes); // 2. Add the new user routes to your app
+app.use('/api/documents', documentRoutes);
+app.use('/api/claims', claimRoutes);
 
 app.get('/', (req, res) => {
     res.send('MediMate API is running...');
