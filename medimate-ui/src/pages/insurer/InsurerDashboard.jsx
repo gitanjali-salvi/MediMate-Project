@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import './InsurerDashboard.css';
+import LogoutModal from '../../components/LogoutModal'; // Import the modal
 
 const InsurerDashboard = () => {
   const [consents, setConsents] = useState([]);
-  const { user } = useAuth();
+  const { user, logout } = useAuth(); // Get the logout function from context
+  const [isModalOpen, setIsModalOpen] = useState(false); // State for the modal
+  const navigate = useNavigate(); // Hook for navigation
 
   useEffect(() => {
     if (user && user.role === 'insurer') {
@@ -28,52 +31,72 @@ const InsurerDashboard = () => {
     return status === 'granted' ? '#4caf50' : '#f44336';
   };
 
+  // Function to handle the logout confirmation
+  const handleConfirmLogout = () => {
+    logout(); // Call the logout function from AuthContext
+    navigate('/'); // Redirect to the homepage
+  };
+
   return (
-    <div className="insurer-dashboard">
-      <header className="dashboard-header">
-        <div className="logo">MediMate Insurer Portal</div>
-        <div className="user-info">Welcome, {user ? user.fullName : 'Insurer'}</div>
-      </header>
-      <div className="dashboard-content">
-        <div className="claims-section">
-          <div className="section-header">
-            <h3>Patient Consent Records</h3>
+    // Wrap component in a fragment to include the modal
+    <>
+      <LogoutModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
+      <div className="insurer-dashboard">
+        <header className="dashboard-header">
+          <div className="logo">MediMate Insurer Portal</div>
+          <div className="user-info">
+            Welcome, {user ? user.fullName : 'Insurer'}
+            {/* Add the logout button here */}
+            <button onClick={() => setIsModalOpen(true)} className="logout-btn">
+              Logout
+            </button>
           </div>
-          <div className="claims-table">
-            <div className="table-header">
-              <div className="header-cell">Patient Name</div>
-              <div className="header-cell">Document ID</div>
-              <div className="header-cell">Status</div>
-              <div className="header-cell">Last Updated</div>
-              <div className="header-cell">Actions</div>
+        </header>
+        <div className="dashboard-content">
+          <div className="claims-section">
+            <div className="section-header">
+              <h3>Patient Consent Records</h3>
             </div>
-            {consents.length > 0 ? consents.map((consent) => (
-              <div key={consent._id} className="table-row">
-                <div className="table-cell">{consent.patientId ? consent.patientId.fullName : 'N/A'}</div>
-                <div className="table-cell">{consent.documentId}</div>
-                <div className="table-cell">
-                  <span className="status-badge" style={{ backgroundColor: getStatusColor(consent.status) }}>
-                    {consent.status}
-                  </span>
-                </div>
-                <div className="table-cell">{new Date(consent.date).toLocaleDateString()}</div>
-                <div className="table-cell">
-                  <Link
-                    to={`/insurer/claim-review/${consent._id}`}
-                    className="review-btn"
-                    style={{ opacity: consent.status === 'granted' ? 1 : 0.5, pointerEvents: consent.status === 'granted' ? 'auto' : 'none' }}
-                  >
-                    Review
-                  </Link>
-                </div>
+            <div className="claims-table">
+              <div className="table-header">
+                <div className="header-cell">Patient Name</div>
+                <div className="header-cell">Document ID</div>
+                <div className="header-cell">Status</div>
+                <div className="header-cell">Last Updated</div>
+                <div className="header-cell">Actions</div>
               </div>
-            )) : (
-              <div className="no-results">No patient consents found.</div>
-            )}
+              {consents.length > 0 ? consents.map((consent) => (
+                <div key={consent._id} className="table-row">
+                  <div className="table-cell">{consent.patientId ? consent.patientId.fullName : 'N/A'}</div>
+                  <div className="table-cell">{consent.documentId}</div>
+                  <div className="table-cell">
+                    <span className="status-badge" style={{ backgroundColor: getStatusColor(consent.status) }}>
+                      {consent.status}
+                    </span>
+                  </div>
+                  <div className="table-cell">{new Date(consent.date).toLocaleDateString()}</div>
+                  <div className="table-cell">
+                    <Link
+                      to={`/insurer/claim-review/${consent._id}`}
+                      className="review-btn"
+                      style={{ opacity: consent.status === 'granted' ? 1 : 0.5, pointerEvents: consent.status === 'granted' ? 'auto' : 'none' }}
+                    >
+                      Review
+                    </Link>
+                  </div>
+                </div>
+              )) : (
+                <div className="no-results">No patient consents found.</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
