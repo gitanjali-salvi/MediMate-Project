@@ -58,7 +58,7 @@ const PatientDashboard = () => {
                         <Link to="/patient/upload-documents" className="action-btn">
                             Upload Documents
                         </Link>
-                        <Link to="/patient/consent" className="action-btn">
+                        <Link to="/patient/grant-consent" className="action-btn">
                             Grant New Consent
                         </Link>
                         <Link to="/patient/consent" className="action-btn">

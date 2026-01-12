@@ -2,6 +2,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv'); // Import dotenv
+const authRoutes = require('./routes/auth');
+const consentRoutes = require('./routes/consents'); // Make sure this is also present
+const documentRoutes = require('./routes/documents');
+const claimRoutes = require('./routes/claims');
 
 // Load environment variables
 dotenv.config({ path: './config.env' });
@@ -14,7 +18,7 @@ app.use(cors()); // Enable Cross-Origin Resource Sharing
 app.use(express.json()); // Allow server to accept JSON in request body
 
 // --- MongoDB Connection ---
-const mongoURI = 'mongodb+srv://sohamrao25:MediM%40te_25@medimatelogin.aavjdtd.mongodb.net/?retryWrites=true&w=majority&appName=MediMateLogin'
+const mongoURI = 'mongodb+srv://gitanjalisalviii:MediM%40te_23@medimatelogin.o2vovgy.mongodb.net/?retryWrites=true&w=majority&appName=MediMateLogin'
 mongoose.connect(mongoURI)
     .then(() => console.log('MongoDB connected successfully.'))
     .catch(err => console.error('MongoDB connection error:', err));
@@ -25,6 +29,8 @@ const userRoutes = require('./routes/users'); // 1. Import the new user routes
 app.use('/api', authRoutes);
 app.use('/api/consents', consentRoutes);
 app.use('/api/users', userRoutes); // 2. Add the new user routes to your app
+app.use('/api/documents', documentRoutes);
+app.use('/api/claims', claimRoutes);
 
 app.get('/', (req, res) => {
     res.send('MediMate API is running...');
