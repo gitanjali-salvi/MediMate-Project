@@ -1,152 +1,182 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Web3 from 'web3';
+import { useAuth } from '../../context/AuthContext';
+import DocumentRegistryABI from '../../contracts/DocumentRegistry.json';
 import './ClaimReview.css';
 
 const ClaimReview = () => {
-  const [claimData] = useState({
-    claimId: 'CLM2025-001',
-    extractedFields: {
-      policyNo: 'POL123456',
-      patientName: 'John Doe',
-      admissionDate: '2025-09-12',
-      dischargeDate: '2025-09-16',
-      diagnosis: 'Pneumonia (ICD: J18.9)',
-      totalBill: '₹65,000'
-    },
-    confidence: 92,
-    documents: [
-      { name: 'Hospital Bill.pdf', type: 'bill' },
-      { name: 'Discharge Summary.pdf', type: 'discharge' },
-      { name: 'Lab Reports.pdf', type: 'lab' }
-    ]
-  });
-
-  const [selectedDocument, setSelectedDocument] = useState(claimData.documents[0]);
-  const [comments, setComments] = useState('');
-
-  const handleDecision = (action) => {
-    console.log(`Claim ${action}:`, { claimId: claimData.claimId, comments });
+    const { claimId } = useParams(); // Retrieves MongoDB ID from URL
+    const { user } = useAuth();
+    const navigate = useNavigate();
     
-    let message = '';
-    switch(action) {
-      case 'approve':
-        message = 'Claim approved successfully!';
-        break;
-      case 'reject':
-        message = 'Claim rejected. Patient will be notified.';
-        break;
-      case 'request-info':
-        message = 'Additional information requested from patient.';
-        break;
-      default:
-        message = 'Action completed.';
-    }
-    alert(message);
-  };
+    // State Management
+    const [claim, setClaim] = useState(null);
+    const [loadingAI, setLoadingAI] = useState(false);
+    const [extractedData, setExtractedData] = useState(null);
+    const [blockchainStatus, setBlockchainStatus] = useState({}); // Track verification for each doc
 
-  return (
-    <div className="claim-review">
-      <header className="review-header">
-        <Link to="/insurer/dashboard" className="back-btn">← Back</Link>
-        <h1>Claim Review - Claim ID: {claimData.claimId}</h1>
-      </header>
+    // 1. Fetch Claim Details from MongoDB
+    useEffect(() => {
+        const fetchClaimDetails = async () => {
+            try {
+                const res = await axios.get(`http://localhost:5000/api/claims/${claimId}`, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                });
+                setClaim(res.data);
+                if (res.data.aiExtractedData) setExtractedData(res.data.aiExtractedData);
+            } catch (err) {
+                console.error("Error fetching claim:", err);
+            }
+        };
+        fetchClaimDetails();
+    }, [claimId, user.token]);
 
-      <div className="review-content">
-        <div className="extracted-fields">
-          <h3>Auto-Filled Fields (AI Extracted)</h3>
-          <div className="fields-grid">
-            <div className="field-item">
-              <span className="field-label">Policy No.:</span>
-              <span className="field-value">{claimData.extractedFields.policyNo}</span>
+    // 2. Blockchain Verification Logic
+    const verifyOnBlockchain = async (docHash, docId) => {
+        try {
+            const web3 = new Web3(Web3.givenProvider || "http://localhost:7545"); // Connect to Ganache
+            const networkId = await web3.eth.net.getId();
+            const deployedNetwork = DocumentRegistryABI.networks[networkId];
+            
+            if (!deployedNetwork) {
+                alert("Smart contract not detected on this network.");
+                return;
+            }
+
+            const contract = new web3.eth.Contract(
+                DocumentRegistryABI.abi,
+                deployedNetwork.address
+            );
+
+            // Call getDocument from DocumentRegistry.sol
+            const result = await contract.methods.getDocument(docHash).call();
+            
+            // Map the result from the struct: documentHash, ipfsCid, fileName, patientId, timestamp
+            setBlockchainStatus(prev => ({
+                ...prev,
+                [docId]: {
+                    verified: true,
+                    ipfsCid: result.ipfsCid,
+                    timestamp: new Date(result.timestamp * 1000).toLocaleString(),
+                    owner: result.owner
+                }
+            }));
+        } catch (err) {
+            console.error("Blockchain verification failed:", err);
+            setBlockchainStatus(prev => ({
+                ...prev,
+                [docId]: { verified: false, error: "Record not found on Ledger" }
+            }));
+        }
+    };
+
+    // 3. Mock AI Analysis Trigger
+    const runAIExtraction = async () => {
+        setLoadingAI(true);
+        try {
+            const res = await axios.get(`http://localhost:5000/api/claims/${claimId}/simulate-extraction`, {
+                headers: { 'Authorization': `Bearer ${user.token}` }
+            });
+            
+            // Visual delay for demo effect
+            setTimeout(() => {
+                setExtractedData(res.data);
+                setLoadingAI(false);
+            }, 2000);
+        } catch (err) {
+            console.error("AI Extraction failed:", err);
+            setLoadingAI(false);
+        }
+    };
+
+    if (!claim) return <div className="loading">Loading Claim Details...</div>;
+
+    return (
+        <div className="claim-review-container">
+            <h2>Claim Review: {claim.claimId}</h2>
+            
+            <div className="review-grid">
+                {/* Left Panel: Source Data & Blockchain Verification */}
+                <div className="panel submission-panel">
+                    <h3>Source Evidence</h3>
+                    <p><strong>Patient:</strong> {claim.patientId?.fullName}</p>
+                    <div className="doc-list">
+                        <h4>Decentralized Records</h4>
+                        {claim.documentIds.map(doc => (
+                            <div key={doc._id} className="blockchain-card">
+                                <div className="doc-header">
+                                    <span>📄 {doc.fileName}</span>
+                                    <button 
+                                        onClick={() => verifyOnBlockchain(doc.documentHash, doc._id)}
+                                        className="verify-btn"
+                                    >
+                                        Verify Ledger
+                                    </button>
+                                </div>
+                                
+                                {blockchainStatus[doc._id] && (
+                                    <div className="verification-details fade-in">
+                                        {blockchainStatus[doc._id].verified ? (
+                                            <>
+                                                <p className="status-ok">✅ Integrity Verified</p>
+                                                <p><small>IPFS: {blockchainStatus[doc._id].ipfsCid}</small></p>
+                                                <p><small>Ledger Time: {blockchainStatus[doc._id].timestamp}</small></p>
+                                            </>
+                                        ) : (
+                                            <p className="status-fail">❌ {blockchainStatus[doc._id].error}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={runAIExtraction} className="ai-btn" disabled={loadingAI}>
+                        {loadingAI ? "Analyzing Documents..." : "🪄 Run AI Extraction"}
+                    </button>
+                </div>
+
+                {/* Right Panel: Policy Document (Simulated AI Results) */}
+                <div className="panel ai-panel">
+                    <h3>AI Policy Generation</h3>
+                    {loadingAI ? (
+                        <div className="spinner-container">
+                            <div className="loader"></div>
+                            <p>Processing with MediMate AI...</p>
+                        </div>
+                    ) : extractedData ? (
+                        <div className="policy-form fade-in">
+                            <div className="form-group">
+                                <label>Patient Full Name</label>
+                                <input type="text" readOnly value={extractedData.patientName} />
+                            </div>
+                            <div className="form-group">
+                                <label>Provider/Hospital</label>
+                                <input type="text" readOnly value={extractedData.hospitalName} />
+                            </div>
+                            <div className="form-group">
+                                <label>Total Claimable Amount</label>
+                                <input type="text" readOnly value={`₹${extractedData.totalBillAmount}`} />
+                            </div>
+                            <div className="form-group">
+                                <label>Diagnosis Code</label>
+                                <input type="text" readOnly value={extractedData.diagnosisCode} />
+                            </div>
+                            <div className="actions">
+                                <button className="approve-btn" onClick={() => navigate('/insurer/dashboard')}>Approve</button>
+                                <button className="reject-btn" onClick={() => navigate('/insurer/dashboard')}>Reject</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="placeholder">
+                            <p>Run analysis to view extracted policy details.</p>
+                        </div>
+                    )}
+                </div>
             </div>
-            <div className="field-item">
-              <span className="field-label">Patient Name:</span>
-              <span className="field-value">{claimData.extractedFields.patientName}</span>
-            </div>
-            <div className="field-item">
-              <span className="field-label">Admission Date:</span>
-              <span className="field-value">{claimData.extractedFields.admissionDate}</span>
-            </div>
-            <div className="field-item">
-              <span className="field-label">Discharge Date:</span>
-              <span className="field-value">{claimData.extractedFields.dischargeDate}</span>
-            </div>
-            <div className="field-item">
-              <span className="field-label">Diagnosis:</span>
-              <span className="field-value">{claimData.extractedFields.diagnosis}</span>
-            </div>
-            <div className="field-item">
-              <span className="field-label">Total Bill:</span>
-              <span className="field-value total-amount">{claimData.extractedFields.totalBill}</span>
-            </div>
-          </div>
-          
-          <div className="confidence-indicator">
-            <span>Extracted Field Confidence: </span>
-            <span className={`confidence-score ${claimData.confidence >= 90 ? 'high' : claimData.confidence >= 70 ? 'medium' : 'low'}`}>
-              {claimData.confidence}%
-            </span>
-          </div>
         </div>
-
-        <div className="document-section">
-          <div className="document-tabs">
-            <h3>Original Documents</h3>
-            <div className="tabs">
-              {claimData.documents.map((doc, index) => (
-                <button
-                  key={index}
-                  className={`tab ${selectedDocument.name === doc.name ? 'active' : ''}`}
-                  onClick={() => setSelectedDocument(doc)}
-                >
-                  {doc.name}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div className="document-viewer">
-            <div className="pdf-placeholder">
-              <div className="pdf-icon">📄</div>
-              <p>PDF Preview: {selectedDocument.name}</p>
-              <p className="pdf-note">Document viewer would display the actual PDF content here</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="comments-section">
-          <h3>Review Comments</h3>
-          <textarea
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            placeholder="Add your review comments here..."
-            className="comments-textarea"
-          />
-        </div>
-
-        <div className="action-buttons">
-          <button 
-            className="approve-btn"
-            onClick={() => handleDecision('approve')}
-          >
-            Approve
-          </button>
-          <button 
-            className="reject-btn"
-            onClick={() => handleDecision('reject')}
-          >
-            Reject
-          </button>
-          <button 
-            className="request-info-btn"
-            onClick={() => handleDecision('request-info')}
-          >
-            Request Info
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ClaimReview;

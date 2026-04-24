@@ -110,3 +110,4 @@ ClaimSchema.pre('findOneAndUpdate', function(next) {
 
 // Create and export the Mongoose model
 module.exports = mongoose.model('Claim', ClaimSchema);
+

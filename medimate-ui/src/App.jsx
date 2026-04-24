@@ -18,6 +18,7 @@ import ClaimTracking from './pages/patient/ClaimTracking';
 import ClaimReview from './pages/insurer/ClaimReview';
 import HospitalUpload from './pages/hospital/HospitalUpload';
 import ModuleSelector from './components/ModuleSelector';
+import InitiateClaim from './pages/patient/InitiateClaim';
 
 // Auth Component
 import ProtectedRoute from './components/ProtectedRoute';
@@ -44,6 +45,7 @@ function App() {
         <Route path="/patient/grant-consent" element={<ProtectedRoute><GrantConsent /></ProtectedRoute>} />
         <Route path="/patient/upload-documents" element={<ProtectedRoute><UploadDocuments /></ProtectedRoute>} />
         <Route path="/patient/track-claims" element={<ProtectedRoute><ClaimTracking /></ProtectedRoute>} />
+        <Route path="/patient/initiate-claim" element={<ProtectedRoute><InitiateClaim /></ProtectedRoute>} />
 
         {/* Hospital Routes */}
         <Route path="/hospital/dashboard" element={<ProtectedRoute><HospitalDashboard /></ProtectedRoute>} />

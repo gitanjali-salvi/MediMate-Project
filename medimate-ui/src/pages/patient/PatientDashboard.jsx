@@ -1,19 +1,55 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Import axios for the request
 import './PatientDashboard.css';
 import LogoutModal from '../../components/LogoutModal';
 
 const PatientDashboard = () => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
     
-    // --- UPDATED TO READ FROM LOCALSTORAGE ---
-    const patientName = localStorage.getItem('userName') || "Patient"; // Use the stored name, with a fallback
+    const patientName = localStorage.getItem('userName') || "Patient";
+    const patientId = localStorage.getItem('userId'); // Ensure you store userId during login
     const claimStatus = "In Processing";
+
+    // --- NEW: HANDLE APPLY POLICY ---
+    const handleApplyPolicy = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            
+            // For the demo, we use a static Insurer ID and placeholder Document IDs
+            // Replace 'STATIC_INSURER_ID' with an actual User ID from your MongoDB 'users' collection
+            const policyData = {
+                patientId: patientId,
+                insurerId: "65ac3f3db619619f84463c21", // Static demo ID
+                documentIds: ["65ac3f3db619619f84463c22"], // Replace with actual uploaded Doc IDs
+                consentId: "65ac3f3db619619f84463c23",   // Placeholder Consent ID
+                claimAmount: 50000,
+                diagnosis: "Routine Checkup / Policy Initiation"
+            };
+
+            const response = await axios.post('http://localhost:5000/api/claims', policyData, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.status === 201) {
+                alert("Policy Application Submitted Successfully!");
+                navigate('/patient/track-claims');
+            }
+        } catch (err) {
+            console.error("Policy application failed:", err);
+            alert("Error submitting policy application.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleConfirmLogout = () => {
         localStorage.removeItem('token');
-        localStorage.removeItem('userName'); // Also remove the name on logout
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userId');
         navigate('/');
     };
 
@@ -28,14 +64,13 @@ const PatientDashboard = () => {
                 <header className="dashboard-header">
                     <div className="logo">MediMate</div>
                     <div className="welcome">
-                        Welcome, {patientName} {/* This will now be the real name */}
+                        Welcome, {patientName}
                         <button onClick={() => setIsModalOpen(true)} className="logout-btn">
                             Logout
                         </button>
                     </div>
                 </header>
 
-                {/* ... (The rest of your dashboard content is correct) ... */}
                 <div className="dashboard-content">
                     <div className="claim-status-section">
                         <h3>Claim Status: {claimStatus}</h3>
@@ -55,6 +90,15 @@ const PatientDashboard = () => {
                         </div>
                     </div>
                     <div className="action-buttons">
+                        {/* --- NEW BUTTON FOR POLICY APPLICATION --- */}
+                        <button 
+                            onClick={handleApplyPolicy} 
+                            className="action-btn policy-btn" 
+                            disabled={loading}
+                        >
+                            {loading ? "Processing..." : "Apply for New Policy"}
+                        </button>
+
                         <Link to="/patient/upload-documents" className="action-btn">
                             Upload Documents
                         </Link>

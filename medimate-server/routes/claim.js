@@ -1,112 +1,152 @@
-const mongoose = require('mongoose');
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth'); //
+const Claim = require('../models/Claim'); //
+const Document = require('../models/Document'); //
+const User = require('../models/User'); //
 
-// Define the schema for the insurance claim
-const ClaimSchema = new mongoose.Schema({
-    // A user-friendly or system-generated unique ID for the claim
-    claimId: {
-        type: String,
-        required: [true, 'Claim ID is required.'],
-        unique: true,
-        trim: true,
-        index: true, // Index for faster lookups by claim ID
-    },
-    // Reference to the patient User document
-    patientId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Links to the 'User' model
-        required: [true, 'Patient ID is required.'],
-        index: true, // Index for faster queries by patient
-    },
-    // Reference to the insurer User document
-    insurerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Links to the 'User' model
-        required: [true, 'Insurer ID is required.'],
-        index: true, // Index for faster queries by insurer
-    },
-    // Array of references to associated Document documents
-    documentIds: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Document', // Links to the 'Document' model
-    }],
-    // Reference to the specific Consent document authorizing this claim's data access
-    consentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Consent', // Links to the 'Consent' model
-        required: [true, 'Consent ID is required.'],
-    },
-    // Current status of the claim processing
-    status: {
-        type: String,
-        enum: ['submitted', 'reviewing', 'approved', 'rejected', 'info_requested'],
-        default: 'submitted',
-        index: true, // Index for faster queries by status
-    },
-    // Date the claim was initially submitted
-    submissionDate: {
-        type: Date,
-        default: Date.now,
-    },
-    // Date the claim was last updated (status change, comment added, etc.)
-    lastUpdateDate: {
-        type: Date,
-        default: Date.now,
-    },
-    // The monetary amount requested in the claim
-    claimAmount: {
-        type: Number,
-        min: [0, 'Claim amount cannot be negative.'], // Basic validation
-    },
-    // Optional: The monetary amount approved by the insurer
-    approvedAmount: {
-        type: Number,
-        min: [0, 'Approved amount cannot be negative.'],
-    },
-    // Optional: Primary diagnosis associated with the claim
-    diagnosis: {
-        type: String,
-        trim: true,
-    },
-    // Optional: Store structured data extracted by AI (flexible format)
-    aiExtractedData: {
-        type: mongoose.Schema.Types.Mixed,
-    },
-    // Optional: Array to log comments/notes during the review process
-    comments: [{
-        userId: { // User (insurer/admin) who made the comment
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        timestamp: {
-            type: Date,
-            default: Date.now
-        },
-        text: {
-            type: String,
-            trim: true,
-        },
-    }],
-}, {
-    // Add timestamps for createdAt and updatedAt automatically
-    timestamps: true
-});
+// --- ROUTES ---
 
-// Middleware hook to automatically update 'lastUpdateDate' before saving changes
-ClaimSchema.pre('save', function(next) {
-    // Only update if the document is modified (avoids unnecessary updates)
-    if (this.isModified()) {
-        this.lastUpdateDate = Date.now();
+/**
+ * @route   POST /api/claims
+ * @desc    Create a new insurance claim
+ * @access  Private
+ */
+router.post('/', auth, async (req, res) => {
+    const { 
+        patientId, 
+        insurerId, 
+        documentIds, 
+        consentId,   
+        claimAmount, 
+        diagnosis 
+    } = req.body; //
+
+    try {
+        const claimId = `CLM-${Date.now().toString().slice(-6)}`; //
+
+        const newClaim = new Claim({
+            claimId,
+            patientId,
+            insurerId,
+            documentIds,
+            consentId,
+            claimAmount,
+            diagnosis,
+            status: 'submitted', 
+        }); //
+
+        const claim = await newClaim.save(); //
+        res.status(201).json(claim); //
+
+    } catch (err) {
+        console.error('Error creating claim:', err.message);
+        res.status(500).send('Server Error'); //
     }
-    next(); // Continue with the save operation
 });
 
-// Middleware hook to automatically update 'lastUpdateDate' for findOneAndUpdate operations
-ClaimSchema.pre('findOneAndUpdate', function(next) {
-    // Set the lastUpdateDate field in the update operation
-    this.set({ lastUpdateDate: Date.now() });
-    next(); // Continue with the update operation
+/**
+ * @route   GET /api/claims/:claimId/simulate-extraction
+ * @desc    DEMO ONLY: Simulate AI data extraction from IPFS documents
+ * @access  Private (Insurer)
+ */
+router.get('/:claimId/simulate-extraction', auth, async (req, res) => {
+    try {
+        const claim = await Claim.findById(req.params.claimId);
+        
+        if (!claim) {
+            return res.status(404).json({ message: 'Claim not found' });
+        }
+
+        // Mock data to be shown in the Policy Document for the demo
+        const mockData = {
+            patientName: "Gitanjali Salvi",
+            hospitalName: "City General Hospital",
+            totalBillAmount: 50000,
+            diagnosisCode: "ICD-10-E11",
+            treatmentDate: "2026-04-10",
+            policyNumber: "POL-882910",
+            verifiedByBlockchain: true
+        };
+
+        // Save to the Mixed type field in our model
+        claim.aiExtractedData = mockData;
+        claim.status = 'reviewing'; 
+        await claim.save();
+
+        res.json(mockData);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
 });
 
+/**
+ * @route   GET /api/claims/patient/:patientId
+ */
+router.get('/patient/:patientId', auth, async (req, res) => {
+    try {
+        const claims = await Claim.find({ patientId: req.params.patientId })
+            .populate('insurerId', 'fullName') 
+            .sort({ submissionDate: -1 });
+        
+        res.json(claims);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
 
-// Create and export the Mongoose model
-module.exports = mongoose.model('Claim', ClaimSchema);
+/**
+ * @route   GET /api/claims/:id
+ */
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const claim = await Claim.findById(req.params.id)
+            .populate('patientId', 'fullName email')
+            .populate('insurerId', 'fullName')
+            .populate('documentIds');
+            
+        if (!claim) {
+            return res.status(404).json({ message: 'Claim not found' });
+        }
+
+        res.json(claim);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+/**
+ * @route   PUT /api/claims/:id
+ * @desc    Update status (Approve/Reject)
+ */
+router.put('/:id', auth, async (req, res) => {
+    const { status, approvedAmount, comments } = req.body;
+
+    try {
+        const claim = await Claim.findById(req.params.id);
+        if (!claim) return res.status(404).json({ message: 'Claim not found' });
+
+        if (status) claim.status = status;
+        if (approvedAmount) claim.approvedAmount = approvedAmount;
+        
+        if (comments) {
+            claim.comments.push({
+                userId: req.user.id,
+                text: comments,
+                timestamp: new Date()
+            });
+        }
+        
+        const updatedClaim = await claim.save();
+        res.json(updatedClaim);
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+module.exports = router;

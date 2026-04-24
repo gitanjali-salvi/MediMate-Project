@@ -6,6 +6,8 @@ const authRoutes = require('./routes/auth');
 const consentRoutes = require('./routes/consents'); // Make sure this is also present
 const documentRoutes = require('./routes/documents');
 const claimRoutes = require('./routes/claims');
+const policyRoutes = require('./routes/policies'); // Add this line
+const userRoutes = require('./routes/users');
 
 // Load environment variables
 dotenv.config({ path: './config.env' });
@@ -24,13 +26,12 @@ mongoose.connect(mongoURI)
     .catch(err => console.error('MongoDB connection error:', err));
 
 // --- API Routes ---
-const userRoutes = require('./routes/users'); // 1. Import the new user routes
-
 app.use('/api', authRoutes);
 app.use('/api/consents', consentRoutes);
-app.use('/api/users', userRoutes); // 2. Add the new user routes to your app
+app.use('/api/users', userRoutes); 
 app.use('/api/documents', documentRoutes);
 app.use('/api/claims', claimRoutes);
+app.use('/api/policies', policyRoutes);
 
 app.get('/', (req, res) => {
     res.send('MediMate API is running...');
